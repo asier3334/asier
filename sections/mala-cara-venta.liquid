@@ -1,0 +1,1217 @@
+{%- comment -%}
+  Mala Cara · Página de venta de producto único.
+  Pensada para tráfico de anuncios en móvil: gancho → producto → prueba → oferta → dudas → compra.
+  Todo (textos, imágenes, colores y bloques) se edita desde el personalizador.
+{%- endcomment -%}
+
+{%- liquid
+  assign p = product
+  if section.settings.product != blank
+    assign p = section.settings.product
+  endif
+
+  assign sid = section.id
+  assign form_id = 'mc-form-' | append: sid
+
+  assign single_price = 0
+  for v in p.variants
+    unless v.title contains section.settings.pack_keyword
+      assign single_price = v.price
+      break
+    endunless
+  endfor
+
+  assign selected = p.selected_or_first_available_variant
+  if section.settings.preselect_pack and p.selected_variant == blank
+    for v in p.variants
+      if v.title contains section.settings.pack_keyword and v.available
+        assign selected = v
+        break
+      endif
+    endfor
+  endif
+
+  assign videos_count = 0
+  assign fotos_count = 0
+  assign ventajas_count = 0
+  assign faq_count = 0
+  for block in section.blocks
+    case block.type
+      when 'video'
+        if block.settings.video != blank or request.design_mode
+          assign videos_count = videos_count | plus: 1
+        endif
+      when 'foto'
+        if block.settings.image != blank or request.design_mode
+          assign fotos_count = fotos_count | plus: 1
+        endif
+      when 'ventaja'
+        assign ventajas_count = ventajas_count | plus: 1
+      when 'faq'
+        assign faq_count = faq_count | plus: 1
+    endcase
+  endfor
+-%}
+
+{%- if p != blank -%}
+{{ 'mc-bagel-fat-one.woff2' | asset_url | preload_tag: as: 'font', type: 'font/woff2', crossorigin: 'anonymous' }}
+{{ 'mc-archivo.woff2' | asset_url | preload_tag: as: 'font', type: 'font/woff2', crossorigin: 'anonymous' }}
+
+<style>
+  @font-face {
+    font-family: 'Bagel Fat One';
+    src: url('{{ 'mc-bagel-fat-one.woff2' | asset_url }}') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Archivo';
+    src: url('{{ 'mc-archivo.woff2' | asset_url }}') format('woff2');
+    font-weight: 100 900;
+    font-display: swap;
+  }
+
+  #mc-{{ sid }} {
+    --mc-yellow: {{ section.settings.color_yellow }};
+    --mc-black: {{ section.settings.color_black }};
+    --mc-red: {{ section.settings.color_red }};
+    --mc-cream: {{ section.settings.color_cream }};
+    --mc-white: #fff;
+    --mc-display: 'Bagel Fat One', 'Arial Black', system-ui, sans-serif;
+    --mc-body: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mc-radius: 18px;
+    --mc-border: 3px solid var(--mc-black);
+    --mc-shadow: 5px 5px 0 var(--mc-black);
+    --mc-gutter: 16px;
+    background: var(--mc-cream);
+    color: var(--mc-black);
+    font-family: var(--mc-body);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+  }
+  #mc-{{ sid }} *,
+  #mc-{{ sid }} *::before,
+  #mc-{{ sid }} *::after { box-sizing: border-box; }
+  #mc-{{ sid }} img,
+  #mc-{{ sid }} video { display: block; max-width: 100%; height: auto; }
+  #mc-{{ sid }} h1,
+  #mc-{{ sid }} h2,
+  #mc-{{ sid }} h3 {
+    font-family: var(--mc-display);
+    font-weight: 400;
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+    margin: 0;
+    color: inherit;
+  }
+  #mc-{{ sid }} p { margin: 0; }
+  #mc-{{ sid }} a:not(.mc-btn) { color: inherit; }
+  #mc-{{ sid }} :focus-visible {
+    outline: 3px solid var(--mc-red);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  .mc-wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 var(--mc-gutter); }
+  .mc-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .mc-block { padding: 56px 0; }
+  .mc-kicker {
+    display: inline-block;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .mc-h2 { font-size: clamp(34px, 8vw, 64px); margin-bottom: 20px !important; }
+  .mc-lead { font-size: 18px; max-width: 60ch; }
+
+  /* ---------- Botones ---------- */
+  .mc-btn {
+    -webkit-appearance: none;
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 58px;
+    padding: 14px 22px;
+    border: var(--mc-border);
+    border-radius: 999px;
+    background: var(--mc-black);
+    color: var(--mc-yellow);
+    font-family: var(--mc-display);
+    font-size: 21px;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--mc-red);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .mc-btn:hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 var(--mc-red); }
+  .mc-btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--mc-red); }
+  .mc-btn[disabled] { opacity: .55; cursor: not-allowed; box-shadow: none; transform: none; }
+  .mc-btn--light { background: var(--mc-yellow); color: var(--mc-black); box-shadow: 4px 4px 0 var(--mc-black); }
+  .mc-btn--light:hover { box-shadow: 6px 6px 0 var(--mc-black); }
+  .mc-btn--light:active { box-shadow: 1px 1px 0 var(--mc-black); }
+
+  /* ---------- Barra en movimiento ---------- */
+  .mc-marquee {
+    background: var(--mc-black);
+    color: var(--mc-yellow);
+    overflow: hidden;
+    white-space: nowrap;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 6px 0;
+  }
+  .mc-marquee__track { display: inline-flex; animation: mc-marquee {{ section.settings.marquee_speed }}s linear infinite; }
+  .mc-marquee__track span { padding-right: 2.5em; }
+  @keyframes mc-marquee { to { transform: translateX(-50%); } }
+
+  /* ---------- Primera pantalla ---------- */
+  .mc-hero { background: var(--mc-yellow); padding: 10px 0 28px; position: relative; }
+  .mc-hero__grid { display: grid; gap: 12px; }
+  .mc-gallery { position: relative; }
+  .mc-gallery__track {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    gap: 10px;
+    border-radius: var(--mc-radius);
+  }
+  .mc-gallery__track::-webkit-scrollbar { display: none; }
+  .mc-gallery__slide {
+    flex: 0 0 100%;
+    scroll-snap-align: center;
+    background: var(--mc-cream);
+    border: var(--mc-border);
+    border-radius: var(--mc-radius);
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+    max-height: {{ section.settings.hero_image_height }}svh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mc-gallery__slide img { width: 100%; height: 100%; object-fit: cover; }
+  .mc-gallery__slide:first-child img { animation: mc-float 5s ease-in-out infinite; }
+  @keyframes mc-float { 50% { transform: translateY(-6px) rotate(-1deg); } }
+  .mc-gallery__count {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    background: var(--mc-black);
+    color: var(--mc-cream);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .mc-gallery__nav { display: none; }
+  .mc-stamp {
+    position: absolute;
+    top: -6px;
+    left: -4px;
+    width: 86px;
+    height: 86px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .mc-stamp svg { width: 100%; height: 100%; animation: mc-spin 14s linear infinite; }
+  @keyframes mc-spin { to { transform: rotate(360deg); } }
+
+  .mc-buy__top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .mc-buy__title { font-size: clamp(26px, 7.4vw, 58px); }
+  .mc-buy__hook { font-weight: 600; margin-top: 4px !important; font-size: 15px; }
+  .mc-buy__hook strong { background: var(--mc-black); color: var(--mc-yellow); padding: 0 6px; border-radius: 4px; }
+
+  .mc-packs { border: 0; padding: 0; margin: 12px 0 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mc-pack { position: relative; display: block; cursor: pointer; }
+  .mc-pack input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .mc-pack__card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    height: 100%;
+    min-height: 72px;
+    padding: 10px 12px 8px;
+    background: var(--mc-cream);
+    border: var(--mc-border);
+    border-radius: 14px;
+    transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+  }
+  .mc-pack input:checked + .mc-pack__card { background: var(--mc-white); box-shadow: var(--mc-shadow); transform: translate(-2px, -2px); }
+  .mc-pack input:focus-visible + .mc-pack__card { outline: 3px solid var(--mc-red); outline-offset: 3px; }
+  .mc-pack input:disabled + .mc-pack__card { opacity: .5; text-decoration: line-through; }
+  .mc-pack__name { font-weight: 800; font-size: 15px; line-height: 1.2; }
+  .mc-pack__price { font-family: var(--mc-display); font-size: 22px; line-height: 1.1; }
+  .mc-pack__unit { font-size: 13px; font-weight: 600; }
+  .mc-pack__badge {
+    position: absolute;
+    top: -11px;
+    right: 8px;
+    background: var(--mc-red);
+    color: var(--mc-white);
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 2px solid var(--mc-black);
+    z-index: 1;
+  }
+  .mc-save { font-size: 13px; font-weight: 700; margin: 0 0 10px !important; }
+  .mc-save mark { background: var(--mc-white); color: var(--mc-black); padding: 1px 6px; border-radius: 4px; border: 2px solid var(--mc-black); }
+
+  .mc-micro { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+  .mc-micro li { display: flex; align-items: center; gap: 8px; }
+  .mc-micro svg { flex: 0 0 20px; width: 20px; height: 20px; }
+  .mc-pay { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; list-style: none; padding: 0; }
+  .mc-pay svg { width: 38px; height: 24px; }
+
+  /* ---------- Confianza ---------- */
+  .mc-trust { background: var(--mc-black); color: var(--mc-cream); padding: 26px 0; }
+  .mc-trust__grid { list-style: none; margin: 0 auto; padding: 0 var(--mc-gutter); display: grid; grid-template-columns: 1fr 1fr; gap: 18px 14px; }
+  .mc-trust__item { display: flex; gap: 10px; align-items: flex-start; }
+  .mc-trust__item svg { flex: 0 0 30px; width: 30px; height: 30px; color: var(--mc-yellow); }
+  .mc-trust__item strong { display: block; color: var(--mc-yellow); font-size: 15px; line-height: 1.2; }
+  .mc-trust__item span { font-size: 13px; opacity: .9; }
+
+  /* ---------- Tejido, no impreso ---------- */
+  .mc-detail__grid { display: grid; gap: 16px; margin-top: 8px; }
+  .mc-detail__figs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .mc-fig { margin: 0; }
+  .mc-fig__img {
+    aspect-ratio: 4 / 5;
+    border: var(--mc-border);
+    border-radius: var(--mc-radius);
+    overflow: hidden;
+    background: var(--mc-yellow);
+  }
+  .mc-fig__img img { width: 100%; height: 100%; object-fit: cover; }
+  .mc-fig figcaption { font-weight: 700; font-size: 14px; margin-top: 8px; }
+  .mc-specs { list-style: none; margin: 0; padding: 0; border-top: var(--mc-border); }
+  .mc-specs li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 2px solid var(--mc-black); font-size: 15px; }
+  .mc-specs li span:first-child { font-weight: 800; }
+  .mc-specs li span:last-child { text-align: right; }
+
+  /* ---------- Ventajas ---------- */
+  .mc-pros { background: var(--mc-yellow); }
+  .mc-pros__grid { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  .mc-pro {
+    background: var(--mc-cream);
+    border: var(--mc-border);
+    border-radius: var(--mc-radius);
+    padding: 18px;
+    box-shadow: var(--mc-shadow);
+  }
+  .mc-pro__n { font-family: var(--mc-display); color: var(--mc-red); font-size: 30px; line-height: 1; }
+  .mc-pro h3 { font-size: 24px; margin: 6px 0 6px; }
+
+  /* ---------- Franja inclinada ---------- */
+  .mc-tape {
+    background: var(--mc-red);
+    color: var(--mc-white);
+    border-block: var(--mc-border);
+    transform: rotate(-2deg);
+    margin: 10px -20px;
+    padding: 12px 0;
+    overflow: hidden;
+    white-space: nowrap;
+    font-family: var(--mc-display);
+    font-size: 26px;
+    line-height: 1;
+  }
+  .mc-tape .mc-marquee__track { animation-direction: reverse; }
+
+  /* ---------- UGC y "Así se lleva" ---------- */
+  .mc-rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 68%;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+  }
+  .mc-rail > * { scroll-snap-align: start; }
+  .mc-ugc {
+    aspect-ratio: 9 / 16;
+    border: var(--mc-border);
+    border-radius: var(--mc-radius);
+    overflow: hidden;
+    background: var(--mc-black);
+    position: relative;
+  }
+  .mc-ugc video { width: 100%; height: 100%; object-fit: cover; }
+  .mc-ugc__by { position: absolute; left: 10px; bottom: 10px; background: var(--mc-yellow); font-weight: 800; font-size: 13px; padding: 3px 10px; border-radius: 999px; border: 2px solid var(--mc-black); }
+  .mc-look { margin: 0; }
+  .mc-look__img { aspect-ratio: 4 / 5; border: var(--mc-border); border-radius: var(--mc-radius); overflow: hidden; background: var(--mc-yellow); }
+  .mc-look__img img { width: 100%; height: 100%; object-fit: cover; }
+  .mc-look figcaption { font-size: 14px; font-weight: 700; margin-top: 8px; }
+  .mc-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 16px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 14px;
+    color: var(--mc-black);
+    background: repeating-linear-gradient(-45deg, var(--mc-yellow) 0 14px, var(--mc-cream) 14px 28px);
+  }
+  .mc-placeholder small { font-weight: 600; background: var(--mc-cream); padding: 2px 8px; border-radius: 6px; }
+
+  /* ---------- Oferta ---------- */
+  .mc-offer { background: var(--mc-black); color: var(--mc-cream); }
+  .mc-offer .mc-h2 { color: var(--mc-yellow); }
+  .mc-offer__grid { display: grid; gap: 16px; margin-top: 8px; }
+  .mc-offer__card {
+    position: relative;
+    background: var(--mc-cream);
+    color: var(--mc-black);
+    border: var(--mc-border);
+    border-radius: var(--mc-radius);
+    padding: 22px 18px 18px;
+  }
+  .mc-offer__card--best { background: var(--mc-yellow); box-shadow: 6px 6px 0 var(--mc-red); }
+  .mc-offer__card h3 { font-size: 28px; }
+  .mc-offer__price { font-family: var(--mc-display); font-size: 44px; line-height: 1; margin: 10px 0 2px !important; }
+  .mc-offer__unit { font-weight: 700; margin-bottom: 14px !important; }
+  .mc-offer__card .mc-pack__badge { top: -12px; left: 16px; right: auto; font-size: 12px; }
+  .mc-offer__note { font-size: 14px; opacity: .9; margin-top: 14px !important; }
+
+  /* ---------- FAQ ---------- */
+  .mc-faq__list { border-top: var(--mc-border); }
+  .mc-faq details { border-bottom: var(--mc-border); }
+  .mc-faq summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    min-height: 56px;
+    padding: 14px 0;
+    font-weight: 800;
+    font-size: 18px;
+  }
+  .mc-faq summary::-webkit-details-marker { display: none; }
+  .mc-faq summary::after {
+    content: '+';
+    flex: 0 0 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border: var(--mc-border);
+    border-radius: 50%;
+    font-family: var(--mc-display);
+    font-size: 22px;
+    background: var(--mc-yellow);
+    transition: transform .2s ease;
+  }
+  .mc-faq details[open] summary::after { transform: rotate(45deg); }
+  .mc-faq__a { padding: 0 0 18px; max-width: 65ch; }
+  .mc-faq__a p + p { margin-top: 8px; }
+  .mc-faq__contact { margin-top: 20px !important; font-weight: 600; }
+
+  /* ---------- Cierre ---------- */
+  .mc-final { background: var(--mc-yellow); text-align: center; padding: 64px 0 72px; }
+  .mc-final h2 { font-size: clamp(40px, 11vw, 96px); }
+  .mc-final p { font-size: 18px; font-weight: 600; margin: 14px auto 24px !important; max-width: 36ch; }
+  .mc-final .mc-btn { max-width: 420px; }
+
+  /* ---------- Botón fijo móvil ---------- */
+  .mc-sticky {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px var(--mc-gutter) calc(10px + env(safe-area-inset-bottom));
+    background: var(--mc-cream);
+    border-top: var(--mc-border);
+    transform: translateY(110%);
+    transition: transform .25s ease;
+  }
+  .mc-sticky.is-visible { transform: translateY(0); }
+  .mc-sticky__info { flex: 0 0 auto; line-height: 1.15; }
+  .mc-sticky__info strong { display: block; font-family: var(--mc-display); font-size: 20px; font-weight: 400; }
+  .mc-sticky__info span { font-size: 12px; font-weight: 700; }
+  .mc-sticky .mc-btn { min-height: 52px; font-size: 18px; flex: 1; }
+
+  /* ---------- Aparición suave ---------- */
+  .mc-reveal { opacity: 0; transform: translateY(18px); transition: opacity .5s ease, transform .5s ease; }
+  .mc-reveal.is-in { opacity: 1; transform: none; }
+
+  /* ---------- Escritorio ---------- */
+  @media (min-width: 750px) {
+    #mc-{{ sid }} { --mc-gutter: 32px; }
+    .mc-block { padding: 88px 0; }
+    .mc-trust__grid { grid-template-columns: repeat(4, 1fr); }
+    .mc-pros__grid { grid-template-columns: repeat(3, 1fr); }
+    .mc-offer__grid { grid-template-columns: 1fr 1fr; max-width: 860px; }
+    .mc-rail { grid-auto-columns: calc((100% - 36px) / 4); }
+    .mc-detail__grid { grid-template-columns: 1.3fr 1fr; align-items: center; gap: 40px; }
+  }
+  @media (min-width: 990px) {
+    .mc-hero { padding: 40px 0 56px; }
+    .mc-hero__grid { grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: center; }
+    .mc-gallery__slide { max-height: none; }
+    .mc-gallery__nav {
+      display: flex;
+      position: absolute;
+      top: 50%;
+      left: 12px;
+      right: 12px;
+      justify-content: space-between;
+      pointer-events: none;
+      transform: translateY(-50%);
+    }
+    .mc-gallery__nav button {
+      pointer-events: auto;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: var(--mc-border);
+      background: var(--mc-yellow);
+      font-family: var(--mc-display);
+      font-size: 22px;
+      cursor: pointer;
+    }
+    .mc-stamp { width: 120px; height: 120px; top: -18px; left: -18px; }
+    .mc-buy__hook { font-size: 19px; }
+    .mc-pack__card { padding: 14px 16px 12px; }
+    .mc-pack__price { font-size: 30px; }
+    .mc-pack__name { font-size: 17px; }
+    .mc-save { font-size: 15px; margin-bottom: 14px !important; }
+    .mc-btn { font-size: 24px; min-height: 64px; }
+    .mc-sticky { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #mc-{{ sid }} *,
+    #mc-{{ sid }} *::before,
+    #mc-{{ sid }} *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+    .mc-reveal { opacity: 1; transform: none; }
+  }
+  {%- unless section.settings.animations -%}
+    #mc-{{ sid }} *, #mc-{{ sid }} *::before, #mc-{{ sid }} *::after { animation: none !important; }
+    .mc-reveal { opacity: 1; transform: none; }
+  {%- endunless -%}
+</style>
+
+<div id="mc-{{ sid }}" class="mc" data-mc>
+  {%- comment -%} 1 · Barra en movimiento: solo datos reales (envío, devolución, pago) {%- endcomment -%}
+  {%- if section.settings.marquee_text != blank -%}
+    <div class="mc-marquee" role="note" aria-label="{{ section.settings.marquee_text | escape }}">
+      <div class="mc-marquee__track" aria-hidden="true">
+        {%- for i in (1..8) -%}<span>{{ section.settings.marquee_text | escape }}</span>{%- endfor -%}
+      </div>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} 2 · Primera pantalla: foto, nombre, packs con precio y botón {%- endcomment -%}
+  <section class="mc-hero" aria-labelledby="mc-title-{{ sid }}">
+    <div class="mc-wrap mc-hero__grid">
+      <div class="mc-gallery">
+        {%- if section.settings.show_stamp -%}
+          <div class="mc-stamp" aria-hidden="true">
+            <svg viewBox="0 0 120 120">
+              <defs><path id="mc-circle-{{ sid }}" d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0"/></defs>
+              <circle cx="60" cy="60" r="58" fill="{{ section.settings.color_red }}" stroke="{{ section.settings.color_black }}" stroke-width="3"/>
+              <text font-family="Archivo, sans-serif" font-weight="800" font-size="12" fill="#fff">
+                <textPath href="#mc-circle-{{ sid }}" textLength="270" lengthAdjust="spacing">{{ section.settings.stamp_text | upcase | escape }} ✦</textPath>
+              </text>
+              <circle cx="60" cy="60" r="18" fill="{{ section.settings.color_yellow }}" stroke="{{ section.settings.color_black }}" stroke-width="3"/>
+            </svg>
+          </div>
+        {%- endif -%}
+        <div class="mc-gallery__track" data-mc-gallery tabindex="0" aria-label="Fotos del producto">
+          {%- for media in p.media -%}
+            {%- if media.media_type == 'image' or media.preview_image != blank -%}
+              {%- liquid
+                assign img = media.preview_image
+                assign alt = img.alt | default: p.title
+                if forloop.first
+                  assign loading = 'eager'
+                  assign priority = 'high'
+                else
+                  assign loading = 'lazy'
+                  assign priority = 'auto'
+                endif
+              -%}
+              <div class="mc-gallery__slide">
+                {{ img | image_url: width: 1200 | image_tag:
+                  widths: '360, 540, 720, 900, 1200',
+                  sizes: '(min-width: 990px) 560px, calc(100vw - 32px)',
+                  loading: loading,
+                  fetchpriority: priority,
+                  alt: alt
+                }}
+              </div>
+            {%- endif -%}
+          {%- else -%}
+            <div class="mc-gallery__slide">{{ 'product-1' | placeholder_svg_tag }}</div>
+          {%- endfor -%}
+        </div>
+        {%- if p.media.size > 1 -%}
+          <span class="mc-gallery__count" aria-hidden="true"><span data-mc-count>1</span>/{{ p.media.size }}</span>
+          <div class="mc-gallery__nav">
+            <button type="button" data-mc-prev aria-label="Foto anterior">←</button>
+            <button type="button" data-mc-next aria-label="Foto siguiente">→</button>
+          </div>
+        {%- endif -%}
+      </div>
+
+      <div class="mc-buy">
+        <div class="mc-buy__top">
+          <h1 id="mc-title-{{ sid }}" class="mc-buy__title">{{ section.settings.title | default: p.title | escape }}</h1>
+        </div>
+        {%- if section.settings.hook != blank -%}
+          <p class="mc-buy__hook">{{ section.settings.hook }}</p>
+        {%- endif -%}
+
+        {%- form 'product', p, id: form_id, class: 'mc-form', novalidate: 'novalidate', data-mc-form: '' -%}
+          {%- if section.settings.after_add == 'checkout' -%}
+            <input type="hidden" name="return_to" value="/checkout">
+          {%- endif -%}
+          <input type="hidden" name="quantity" value="1">
+          <fieldset class="mc-packs">
+            <legend class="mc-sr">Elige cuántos quieres</legend>
+            {%- for v in p.variants -%}
+              {%- liquid
+                assign units = 1
+                assign is_pack = false
+                if v.title contains section.settings.pack_keyword
+                  assign units = section.settings.pack_units
+                  assign is_pack = true
+                endif
+                assign unit_price = v.price | divided_by: units
+                assign saving = single_price | times: units | minus: v.price
+                if v.title contains section.settings.pack_keyword
+                  assign label = section.settings.pack_label
+                else
+                  assign label = section.settings.single_label
+                endif
+                if label == blank
+                  assign label = v.title
+                endif
+                if is_pack
+                  assign btn_label = section.settings.button_pack_label
+                else
+                  assign btn_label = section.settings.button_label
+                endif
+              -%}
+              <label class="mc-pack">
+                {%- if is_pack and section.settings.pack_badge != blank -%}
+                  <span class="mc-pack__badge">{{ section.settings.pack_badge | escape }}</span>
+                {%- endif -%}
+                <input
+                  type="radio"
+                  name="id"
+                  value="{{ v.id }}"
+                  {% if v.id == selected.id %}checked{% endif %}
+                  {% unless v.available %}disabled{% endunless %}
+                  data-price="{{ v.price | money | escape }}"
+                  data-label="{{ label | escape }}"
+                  data-button="{{ btn_label | escape }}"
+                  data-saving="{% if is_pack and saving > 0 %}{{ saving | money | escape }}{% endif %}"
+                >
+                <span class="mc-pack__card">
+                  <span class="mc-pack__name">{{ label | escape }}</span>
+                  <span class="mc-pack__price">{{ v.price | money }}</span>
+                  {%- if is_pack -%}
+                    <span class="mc-pack__unit">{{ unit_price | money }} cada uno</span>
+                  {%- else -%}
+                    <span class="mc-pack__unit">{{ section.settings.single_note | escape }}</span>
+                  {%- endif -%}
+                  {%- unless v.available -%}<span class="mc-sr">Agotado</span>{%- endunless -%}
+                </span>
+              </label>
+            {%- endfor -%}
+          </fieldset>
+
+          {%- if section.settings.show_saving -%}
+            <p class="mc-save" data-mc-save aria-live="polite"{% unless selected.title contains section.settings.pack_keyword %} hidden{% endunless %}>
+              {{ section.settings.saving_text | escape }} <mark data-mc-save-amount>{{ single_price | times: section.settings.pack_units | minus: selected.price | money }}</mark> {{ section.settings.saving_suffix | escape }}
+            </p>
+          {%- endif -%}
+
+          {%- liquid
+            if selected.title contains section.settings.pack_keyword
+              assign sel_btn = section.settings.button_pack_label
+            else
+              assign sel_btn = section.settings.button_label
+            endif
+          -%}
+          <button type="submit" class="mc-btn" data-mc-submit {% unless p.available %}disabled{% endunless %}>
+            {%- if p.available -%}
+              <span data-mc-btn-label>{{ sel_btn | escape }}</span> · <span data-mc-btn-price>{{ selected.price | money }}</span>
+            {%- else -%}
+              Agotado
+            {%- endif -%}
+          </button>
+        {%- endform -%}
+
+        <ul class="mc-micro">
+          {%- if section.settings.micro_1 != blank -%}
+            <li>{% render 'mc-icon', name: 'truck' %}<span>{{ section.settings.micro_1 }}</span></li>
+          {%- endif -%}
+          {%- if section.settings.micro_2 != blank -%}
+            <li>{% render 'mc-icon', name: 'return' %}<span>{{ section.settings.micro_2 }}</span></li>
+          {%- endif -%}
+          {%- if section.settings.micro_3 != blank -%}
+            <li>{% render 'mc-icon', name: 'lock' %}<span>{{ section.settings.micro_3 }}</span></li>
+          {%- endif -%}
+        </ul>
+        {%- if section.settings.show_payment_icons and shop.enabled_payment_types.size > 0 -%}
+          <ul class="mc-pay" aria-label="Métodos de pago aceptados">
+            {%- for type in shop.enabled_payment_types -%}
+              <li>{{ type | payment_type_svg_tag }}</li>
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+      </div>
+    </div>
+  </section>
+
+  {%- comment -%} 3 · Confianza: envío, devolución, pago y talla {%- endcomment -%}
+  <section class="mc-trust" aria-label="Garantías de compra">
+    <ul class="mc-wrap mc-trust__grid">
+      <li class="mc-trust__item">{% render 'mc-icon', name: 'truck' %}<p><strong>{{ section.settings.trust_1_title | escape }}</strong><span>{{ section.settings.trust_1_text | escape }}</span></p></li>
+      <li class="mc-trust__item">{% render 'mc-icon', name: 'return' %}<p><strong>{{ section.settings.trust_2_title | escape }}</strong><span>{{ section.settings.trust_2_text | escape }}</span></p></li>
+      <li class="mc-trust__item">{% render 'mc-icon', name: 'lock' %}<p><strong>{{ section.settings.trust_3_title | escape }}</strong><span>{{ section.settings.trust_3_text | escape }}</span></p></li>
+      <li class="mc-trust__item">{% render 'mc-icon', name: 'size' %}<p><strong>{{ section.settings.trust_4_title | escape }}</strong><span>{{ section.settings.trust_4_text | escape }}</span></p></li>
+    </ul>
+  </section>
+
+  {%- comment -%} 4 · Prueba de producto: tejido, etiqueta y composición {%- endcomment -%}
+  <section class="mc-block mc-detail" aria-labelledby="mc-detail-{{ sid }}">
+    <div class="mc-wrap">
+      <span class="mc-kicker">{{ section.settings.detail_kicker | escape }}</span>
+      <h2 id="mc-detail-{{ sid }}" class="mc-h2">{{ section.settings.detail_title | escape }}</h2>
+      <div class="mc-detail__grid">
+        <div class="mc-detail__figs mc-reveal">
+          {%- for i in (1..2) -%}
+            {%- liquid
+              if i == 1
+                assign d_img = section.settings.detail_image_1
+                assign d_cap = section.settings.detail_caption_1
+              else
+                assign d_img = section.settings.detail_image_2
+                assign d_cap = section.settings.detail_caption_2
+              endif
+            -%}
+            {%- if d_img != blank or request.design_mode -%}
+              <figure class="mc-fig">
+                <div class="mc-fig__img">
+                  {%- if d_img != blank -%}
+                    {{ d_img | image_url: width: 900 | image_tag: widths: '300, 450, 600, 900', sizes: '(min-width: 750px) 30vw, 46vw', loading: 'lazy', alt: d_img.alt | default: d_cap }}
+                  {%- else -%}
+                    <div class="mc-placeholder">Foto de detalle<small>Súbela en el personalizador</small></div>
+                  {%- endif -%}
+                </div>
+                {%- if d_cap != blank -%}<figcaption>{{ d_cap | escape }}</figcaption>{%- endif -%}
+              </figure>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+        <div class="mc-reveal">
+          {%- if section.settings.detail_text != blank -%}
+            <div class="mc-lead" style="margin-bottom:20px">{{ section.settings.detail_text }}</div>
+          {%- endif -%}
+          <ul class="mc-specs">
+            {%- for i in (1..5) -%}
+              {%- liquid
+                assign k = 'spec_' | append: i | append: '_label'
+                assign val = 'spec_' | append: i | append: '_value'
+              -%}
+              {%- if section.settings[k] != blank and section.settings[val] != blank -%}
+                <li><span>{{ section.settings[k] | escape }}</span><span>{{ section.settings[val] | escape }}</span></li>
+              {%- endif -%}
+            {%- endfor -%}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {%- comment -%} 5 · Ventajas {%- endcomment -%}
+  {%- if ventajas_count > 0 -%}
+    <section class="mc-block mc-pros" aria-labelledby="mc-pros-{{ sid }}">
+      <div class="mc-wrap">
+        <h2 id="mc-pros-{{ sid }}" class="mc-h2">{{ section.settings.pros_title | escape }}</h2>
+        <ul class="mc-pros__grid">
+          {%- assign n = 0 -%}
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'ventaja' -%}
+              {%- assign n = n | plus: 1 -%}
+              <li class="mc-pro mc-reveal" {{ block.shopify_attributes }}>
+                <span class="mc-pro__n" aria-hidden="true">0{{ n }}</span>
+                <h3>{{ block.settings.title | escape }}</h3>
+                <div>{{ block.settings.text }}</div>
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      </div>
+    </section>
+  {%- endif -%}
+
+  {%- if section.settings.tape_text != blank -%}
+    <div class="mc-tape" aria-hidden="true">
+      <div class="mc-marquee__track">
+        {%- for i in (1..8) -%}<span>{{ section.settings.tape_text | escape }}</span>{%- endfor -%}
+      </div>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} 6 · Vídeos / UGC: los huecos vacíos solo se ven en el personalizador {%- endcomment -%}
+  {%- if videos_count > 0 -%}
+    <section class="mc-block" aria-labelledby="mc-ugc-{{ sid }}">
+      <div class="mc-wrap">
+        <span class="mc-kicker">{{ section.settings.ugc_kicker | escape }}</span>
+        <h2 id="mc-ugc-{{ sid }}" class="mc-h2">{{ section.settings.ugc_title | escape }}</h2>
+        <div class="mc-rail">
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'video' -%}
+              {%- if block.settings.video != blank -%}
+                <div class="mc-ugc" {{ block.shopify_attributes }}>
+                  {{ block.settings.video | video_tag:
+                    image_size: '540x',
+                    muted: true,
+                    loop: true,
+                    playsinline: true,
+                    controls: true,
+                    preload: 'none',
+                    data-mc-video: ''
+                  }}
+                  {%- if block.settings.author != blank -%}<span class="mc-ugc__by">{{ block.settings.author | escape }}</span>{%- endif -%}
+                </div>
+              {%- elsif request.design_mode -%}
+                <div class="mc-ugc" {{ block.shopify_attributes }}>
+                  <div class="mc-placeholder">Hueco para vídeo vertical<small>Solo visible al editar</small></div>
+                </div>
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      </div>
+    </section>
+  {%- endif -%}
+
+  {%- comment -%} 7 · Galería "Así se lleva" {%- endcomment -%}
+  {%- if fotos_count > 0 -%}
+    <section class="mc-block" style="padding-top:0" aria-labelledby="mc-look-{{ sid }}">
+      <div class="mc-wrap">
+        <h2 id="mc-look-{{ sid }}" class="mc-h2">{{ section.settings.look_title | escape }}</h2>
+        <div class="mc-rail">
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'foto' -%}
+              {%- if block.settings.image != blank -%}
+                <figure class="mc-look" {{ block.shopify_attributes }}>
+                  <div class="mc-look__img">
+                    {{ block.settings.image | image_url: width: 800 | image_tag: widths: '300, 450, 600, 800', sizes: '(min-width: 750px) 25vw, 68vw', loading: 'lazy', alt: block.settings.image.alt | default: block.settings.caption | default: p.title }}
+                  </div>
+                  {%- if block.settings.caption != blank -%}<figcaption>{{ block.settings.caption | escape }}</figcaption>{%- endif -%}
+                </figure>
+              {%- elsif request.design_mode -%}
+                <figure class="mc-look" {{ block.shopify_attributes }}>
+                  <div class="mc-look__img"><div class="mc-placeholder">Foto «así se lleva»<small>Solo visible al editar</small></div></div>
+                </figure>
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      </div>
+    </section>
+  {%- endif -%}
+
+  {%- comment -%} 8 · Oferta: mismos precios reales, el pack destacado {%- endcomment -%}
+  <section class="mc-block mc-offer" aria-labelledby="mc-offer-{{ sid }}">
+    <div class="mc-wrap">
+      <h2 id="mc-offer-{{ sid }}" class="mc-h2">{{ section.settings.offer_title | escape }}</h2>
+      <div class="mc-offer__grid">
+        {%- for v in p.variants -%}
+          {%- liquid
+            assign units = 1
+            assign is_pack = false
+            if v.title contains section.settings.pack_keyword
+              assign units = section.settings.pack_units
+              assign is_pack = true
+            endif
+            assign unit_price = v.price | divided_by: units
+            assign saving = single_price | times: units | minus: v.price
+            if is_pack
+              assign label = section.settings.pack_label
+            else
+              assign label = section.settings.single_label
+            endif
+            if label == blank
+              assign label = v.title
+            endif
+          -%}
+          <div class="mc-offer__card{% if is_pack %} mc-offer__card--best{% endif %} mc-reveal">
+            {%- if is_pack and section.settings.pack_badge != blank -%}
+              <span class="mc-pack__badge">{{ section.settings.pack_badge | escape }}</span>
+            {%- endif -%}
+            <h3>{{ label | escape }}</h3>
+            <p class="mc-offer__price">{{ v.price | money }}</p>
+            <p class="mc-offer__unit">
+              {%- if is_pack -%}
+                {{ unit_price | money }} cada uno{% if saving > 0 %} · ahorras {{ saving | money }} frente a {{ units }} sueltos{% endif %}
+              {%- else -%}
+                {{ section.settings.single_note | escape }}
+              {%- endif -%}
+            </p>
+            <a href="#mc-title-{{ sid }}" class="mc-btn{% unless is_pack %} mc-btn--light{% endunless %}" data-mc-pick="{{ v.id }}"{% unless v.available %} aria-disabled="true"{% endunless %}>
+              {%- if is_pack -%}{{ section.settings.button_pack_label | escape }}{%- else -%}{{ section.settings.button_label | escape }}{%- endif -%}
+            </a>
+          </div>
+        {%- endfor -%}
+      </div>
+      {%- if section.settings.offer_note != blank -%}
+        <p class="mc-offer__note">{{ section.settings.offer_note | escape }}</p>
+      {%- endif -%}
+    </div>
+  </section>
+
+  {%- comment -%} 9 · Preguntas frecuentes {%- endcomment -%}
+  {%- if faq_count > 0 -%}
+    <section class="mc-block mc-faq" aria-labelledby="mc-faq-{{ sid }}">
+      <div class="mc-wrap" style="max-width:860px">
+        <h2 id="mc-faq-{{ sid }}" class="mc-h2">{{ section.settings.faq_title | escape }}</h2>
+        <div class="mc-faq__list">
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'faq' -%}
+              <details {{ block.shopify_attributes }}>
+                <summary>{{ block.settings.question | escape }}</summary>
+                <div class="mc-faq__a">{{ block.settings.answer }}</div>
+              </details>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+        <p class="mc-faq__contact">
+          {{ section.settings.faq_contact | escape }}
+          {%- if section.settings.contact_email != blank %} <a href="mailto:{{ section.settings.contact_email }}">{{ section.settings.contact_email }}</a>{%- endif -%}
+        </p>
+      </div>
+    </section>
+  {%- endif -%}
+
+  {%- comment -%} 10 · Cierre con el lema y último botón {%- endcomment -%}
+  <section class="mc-final" aria-labelledby="mc-final-{{ sid }}">
+    <div class="mc-wrap">
+      <h2 id="mc-final-{{ sid }}">{{ section.settings.final_title | escape }}</h2>
+      {%- if section.settings.final_text != blank -%}<p>{{ section.settings.final_text | escape }}</p>{%- endif -%}
+      <a href="#mc-title-{{ sid }}" class="mc-btn" data-mc-pick="{{ selected.id }}" data-mc-final>{{ section.settings.final_button | escape }}</a>
+    </div>
+  </section>
+
+  {%- comment -%} Botón fijo en móvil: aparece cuando el botón principal sale de pantalla {%- endcomment -%}
+  {%- if section.settings.sticky and p.available -%}
+    <div class="mc-sticky" data-mc-sticky aria-hidden="true" inert>
+      <div class="mc-sticky__info">
+        <strong data-mc-sticky-price>{{ selected.price | money }}</strong>
+        <span data-mc-sticky-label>{%- for v in p.variants -%}{%- if v.id == selected.id -%}{%- if v.title contains section.settings.pack_keyword -%}{{ section.settings.pack_label | escape }}{%- else -%}{{ section.settings.single_label | escape }}{%- endif -%}{%- endif -%}{%- endfor -%}</span>
+      </div>
+      <button type="submit" form="{{ form_id }}" class="mc-btn">{{ section.settings.sticky_button | escape }}</button>
+    </div>
+  {%- endif -%}
+</div>
+
+<script>
+  (() => {
+    const root = document.getElementById('mc-{{ sid }}');
+    if (!root || root.dataset.mcReady) return;
+    root.dataset.mcReady = '1';
+
+    const form = root.querySelector('[data-mc-form]');
+    const radios = form ? [...form.querySelectorAll('input[name="id"]')] : [];
+    const btnLabel = root.querySelector('[data-mc-btn-label]');
+    const btnPrice = root.querySelector('[data-mc-btn-price]');
+    const save = root.querySelector('[data-mc-save]');
+    const saveAmount = root.querySelector('[data-mc-save-amount]');
+    const sticky = root.querySelector('[data-mc-sticky]');
+    const stickyPrice = root.querySelector('[data-mc-sticky-price]');
+    const stickyLabel = root.querySelector('[data-mc-sticky-label]');
+
+    const sync = () => {
+      const r = radios.find((x) => x.checked);
+      if (!r) return;
+      if (btnLabel) btnLabel.textContent = r.dataset.button;
+      if (btnPrice) btnPrice.textContent = r.dataset.price;
+      if (stickyPrice) stickyPrice.textContent = r.dataset.price;
+      if (stickyLabel) stickyLabel.textContent = r.dataset.label;
+      if (save) {
+        save.hidden = !r.dataset.saving;
+        if (saveAmount && r.dataset.saving) saveAmount.textContent = r.dataset.saving;
+      }
+    };
+    radios.forEach((r) => r.addEventListener('change', sync));
+
+    // Botones de la oferta y del cierre: eligen la opción y suben a la primera pantalla.
+    root.querySelectorAll('[data-mc-pick]').forEach((a) => {
+      a.addEventListener('click', (e) => {
+        const r = radios.find((x) => x.value === a.dataset.mcPick && !x.disabled);
+        if (!r) return;
+        e.preventDefault();
+        r.checked = true;
+        sync();
+        const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        form.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+        root.querySelector('[data-mc-submit]')?.focus({ preventScroll: true });
+      });
+    });
+
+    // Evita dobles envíos.
+    form?.addEventListener('submit', () => {
+      root.querySelectorAll('button[type="submit"]').forEach((b) => b.setAttribute('aria-busy', 'true'));
+    });
+
+    // Galería: contador y flechas.
+    const track = root.querySelector('[data-mc-gallery]');
+    const count = root.querySelector('[data-mc-count]');
+    if (track) {
+      const step = (dir) => track.scrollBy({ left: dir * track.clientWidth, behavior: 'smooth' });
+      root.querySelector('[data-mc-prev]')?.addEventListener('click', () => step(-1));
+      root.querySelector('[data-mc-next]')?.addEventListener('click', () => step(1));
+      if (count) {
+        track.addEventListener('scroll', () => {
+          count.textContent = Math.round(track.scrollLeft / track.clientWidth) + 1;
+        }, { passive: true });
+      }
+    }
+
+    if (!('IntersectionObserver' in window)) {
+      root.querySelectorAll('.mc-reveal').forEach((el) => el.classList.add('is-in'));
+      return;
+    }
+
+    // Aparición suave al hacer scroll.
+    const revealer = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (en.isIntersecting) {
+          en.target.classList.add('is-in');
+          revealer.unobserve(en.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -10% 0px' });
+    root.querySelectorAll('.mc-reveal').forEach((el) => revealer.observe(el));
+
+    // Botón fijo: visible cuando no se ve ni el formulario ni el botón final.
+    if (sticky && form) {
+      const seen = new Set();
+      const update = () => {
+        const show = seen.size === 0 && form.getBoundingClientRect().top < 0;
+        sticky.classList.toggle('is-visible', show);
+        sticky.setAttribute('aria-hidden', String(!show));
+        sticky.toggleAttribute('inert', !show);
+      };
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((en) => (en.isIntersecting ? seen.add(en.target) : seen.delete(en.target)));
+        update();
+      });
+      io.observe(form);
+      const final = root.querySelector('[data-mc-final]');
+      if (final) io.observe(final);
+    }
+
+    // Vídeos: solo se reproducen (en silencio) cuando están en pantalla.
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const vio = new IntersectionObserver((entries) => {
+        entries.forEach((en) => {
+          const v = en.target;
+          if (en.isIntersecting) v.play().catch(() => {});
+          else v.pause();
+        });
+      }, { threshold: 0.6 });
+      root.querySelectorAll('[data-mc-video], .mc-ugc video').forEach((v) => vio.observe(v));
+    }
+  })();
+</script>
+{%- elsif request.design_mode -%}
+  <div style="padding:40px 16px;text-align:center;font-family:system-ui;background:#FFCD00;color:#141210">
+    Elige el producto en los ajustes de la sección «Mala Cara · Venta».
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Mala Cara · Venta",
+  "tag": "div",
+  "class": "mc-section",
+  "settings": [
+    { "type": "header", "content": "Producto" },
+    { "type": "product", "id": "product", "label": "Producto", "info": "En la ficha de producto puedes dejarlo vacío: usa el producto de la página. En la portada, elige el pasamontañas." },
+    { "type": "text", "id": "pack_keyword", "label": "Palabra que identifica la variante pack", "default": "Pack", "info": "Debe aparecer en el nombre de la variante (p. ej. «Pack de 2»)." },
+    { "type": "range", "id": "pack_units", "label": "Unidades del pack", "min": 2, "max": 6, "step": 1, "default": 2 },
+    { "type": "checkbox", "id": "preselect_pack", "label": "Dejar el pack marcado al entrar", "default": true, "info": "El botón siempre muestra el precio de lo que se elige." },
+    { "type": "select", "id": "after_add", "label": "Al pulsar comprar", "default": "checkout", "options": [
+      { "value": "checkout", "label": "Ir directo al pago" },
+      { "value": "cart", "label": "Ir al carrito" }
+    ]},
+
+    { "type": "header", "content": "Colores de marca" },
+    { "type": "color", "id": "color_yellow", "label": "Amarillo", "default": "#FFCD00" },
+    { "type": "color", "id": "color_black", "label": "Negro", "default": "#141210" },
+    { "type": "color", "id": "color_red", "label": "Rojo", "default": "#D22630" },
+    { "type": "color", "id": "color_cream", "label": "Crema", "default": "#F4EFE3" },
+    { "type": "checkbox", "id": "animations", "label": "Animaciones", "default": true, "info": "Se desactivan solas si el visitante pide «reducir movimiento»." },
+
+    { "type": "header", "content": "Barra superior" },
+    { "type": "text", "id": "marquee_text", "label": "Texto en movimiento", "default": "Envío en 7–12 días laborables ✦ 14 días para devolverlo ✦ Pago seguro ✦ Tejido, no impreso ✦", "info": "Solo datos reales. Déjalo vacío para ocultarla." },
+    { "type": "range", "id": "marquee_speed", "label": "Duración de una vuelta", "min": 10, "max": 60, "step": 2, "unit": "s", "default": 30 },
+
+    { "type": "header", "content": "Primera pantalla" },
+    { "type": "text", "id": "title", "label": "Nombre (vacío = nombre del producto)", "default": "El pasamontañas con mala cara" },
+    { "type": "inline_richtext", "id": "hook", "label": "Gancho", "default": "No es mala cara. Es <strong>tu cara de invierno</strong>." },
+    { "type": "range", "id": "hero_image_height", "label": "Alto máximo de la foto en móvil", "min": 26, "max": 60, "step": 2, "unit": "%", "default": 34, "info": "% de la altura de pantalla. Bájalo si el botón no se ve sin hacer scroll." },
+    { "type": "checkbox", "id": "show_stamp", "label": "Sello giratorio", "default": true },
+    { "type": "text", "id": "stamp_text", "label": "Texto del sello", "default": "Tejido, no impreso" },
+    { "type": "text", "id": "single_label", "label": "Nombre opción 1 unidad", "default": "1 pasamontañas" },
+    { "type": "text", "id": "single_note", "label": "Nota opción 1 unidad", "default": "Para ti" },
+    { "type": "text", "id": "pack_label", "label": "Nombre opción pack", "default": "Pack de 2" },
+    { "type": "text", "id": "pack_badge", "label": "Etiqueta del pack", "default": "Mejor opción" },
+    { "type": "checkbox", "id": "show_saving", "label": "Mostrar ahorro real del pack", "default": true, "info": "Se calcula con los precios de las variantes: 2 sueltos frente al pack." },
+    { "type": "text", "id": "saving_text", "label": "Texto antes del ahorro", "default": "Te ahorras" },
+    { "type": "text", "id": "saving_suffix", "label": "Texto después del ahorro", "default": "frente a comprar 2 sueltos." },
+    { "type": "text", "id": "button_label", "label": "Botón (1 unidad)", "default": "Lo quiero" },
+    { "type": "text", "id": "button_pack_label", "label": "Botón (pack)", "default": "Quiero el pack" },
+    { "type": "inline_richtext", "id": "micro_1", "label": "Línea de confianza 1", "default": "Llega en <strong>7–12 días laborables</strong>" },
+    { "type": "inline_richtext", "id": "micro_2", "label": "Línea de confianza 2", "default": "<strong>14 días</strong> para devolverlo" },
+    { "type": "inline_richtext", "id": "micro_3", "label": "Línea de confianza 3", "default": "Pago seguro y cifrado" },
+    { "type": "checkbox", "id": "show_payment_icons", "label": "Iconos de métodos de pago", "default": true, "info": "Muestra solo los métodos que tengas activos." },
+
+    { "type": "header", "content": "Garantías" },
+    { "type": "text", "id": "trust_1_title", "label": "Envío · título", "default": "Envío a casa" },
+    { "type": "text", "id": "trust_1_text", "label": "Envío · texto", "default": "7–12 días laborables, con seguimiento." },
+    { "type": "text", "id": "trust_2_title", "label": "Devolución · título", "default": "14 días" },
+    { "type": "text", "id": "trust_2_text", "label": "Devolución · texto", "default": "Para devolverlo si no te convence." },
+    { "type": "text", "id": "trust_3_title", "label": "Pago · título", "default": "Pago seguro" },
+    { "type": "text", "id": "trust_3_text", "label": "Pago · texto", "default": "Pasarela cifrada de Shopify." },
+    { "type": "text", "id": "trust_4_title", "label": "Talla · título", "default": "Talla única" },
+    { "type": "text", "id": "trust_4_text", "label": "Talla · texto", "default": "Punto elástico que se adapta." },
+
+    { "type": "header", "content": "Tejido, no impreso" },
+    { "type": "text", "id": "detail_kicker", "label": "Antetítulo", "default": "Míralo de cerca" },
+    { "type": "text", "id": "detail_title", "label": "Título", "default": "Tejido, no impreso." },
+    { "type": "richtext", "id": "detail_text", "label": "Texto", "default": "<p>La cara va tejida en el propio punto jacquard: no es un estampado que se cuartea ni se despega con los lavados.</p>" },
+    { "type": "image_picker", "id": "detail_image_1", "label": "Foto 1 (cara tejida)" },
+    { "type": "text", "id": "detail_caption_1", "label": "Pie foto 1", "default": "La cara, tejida punto a punto." },
+    { "type": "image_picker", "id": "detail_image_2", "label": "Foto 2 (etiqueta en la nuca)" },
+    { "type": "text", "id": "detail_caption_2", "label": "Pie foto 2", "default": "Etiqueta MALA CARA en la nuca." },
+    { "type": "text", "id": "spec_1_label", "label": "Dato 1", "default": "Composición" },
+    { "type": "text", "id": "spec_1_value", "label": "Valor 1", "default": "95% acrílico, 5% elastano" },
+    { "type": "text", "id": "spec_2_label", "label": "Dato 2", "default": "Tejido" },
+    { "type": "text", "id": "spec_2_value", "label": "Valor 2", "default": "Punto jacquard" },
+    { "type": "text", "id": "spec_3_label", "label": "Dato 3", "default": "Talla" },
+    { "type": "text", "id": "spec_3_value", "label": "Valor 3", "default": "Única, elástica" },
+    { "type": "text", "id": "spec_4_label", "label": "Dato 4", "default": "Peso" },
+    { "type": "text", "id": "spec_4_value", "label": "Valor 4", "default": "" },
+    { "type": "text", "id": "spec_5_label", "label": "Dato 5", "default": "Cuidado" },
+    { "type": "text", "id": "spec_5_value", "label": "Valor 5", "default": "Según la etiqueta de composición" },
+
+    { "type": "header", "content": "Ventajas y franja" },
+    { "type": "text", "id": "pros_title", "label": "Título de ventajas", "default": "Por qué mola" },
+    { "type": "text", "id": "tape_text", "label": "Franja inclinada", "default": "NO ES MALA CARA ✦ ES TU CARA DE INVIERNO ✦", "info": "Vacío para ocultarla." },
+
+    { "type": "header", "content": "Vídeos y galería" },
+    { "type": "text", "id": "ugc_kicker", "label": "Antetítulo vídeos", "default": "En movimiento" },
+    { "type": "text", "id": "ugc_title", "label": "Título vídeos", "default": "Míralo puesto" },
+    { "type": "text", "id": "look_title", "label": "Título galería", "default": "Así se lleva" },
+
+    { "type": "header", "content": "Oferta" },
+    { "type": "text", "id": "offer_title", "label": "Título", "default": "Uno para ti. O dos y uno lo regalas." },
+    { "type": "text", "id": "offer_note", "label": "Nota", "default": "Mismo precio siempre, sin cuentas atrás. El pack sale más barato por unidad porque enviamos los dos juntos." },
+
+    { "type": "header", "content": "Preguntas" },
+    { "type": "text", "id": "faq_title", "label": "Título", "default": "Dudas, resueltas" },
+    { "type": "text", "id": "faq_contact", "label": "Texto de contacto", "default": "¿Otra pregunta? Escríbenos:" },
+    { "type": "text", "id": "contact_email", "label": "Email de contacto", "default": "malacara.tiends@gmail.com" },
+
+    { "type": "header", "content": "Cierre y botón fijo" },
+    { "type": "text", "id": "final_title", "label": "Título", "default": "Pon mala cara." },
+    { "type": "text", "id": "final_text", "label": "Texto", "default": "No es mala cara. Es tu cara de invierno." },
+    { "type": "text", "id": "final_button", "label": "Botón", "default": "Elegir el mío" },
+    { "type": "checkbox", "id": "sticky", "label": "Botón fijo abajo en móvil", "default": true },
+    { "type": "text", "id": "sticky_button", "label": "Texto botón fijo", "default": "Comprar" }
+  ],
+  "blocks": [
+    {
+      "type": "ventaja",
+      "name": "Ventaja",
+      "settings": [
+        { "type": "text", "id": "title", "label": "Título", "default": "Ventaja" },
+        { "type": "richtext", "id": "text", "label": "Texto", "default": "<p>Explica la ventaja en una frase.</p>" }
+      ]
+    },
+    {
+      "type": "video",
+      "name": "Vídeo / UGC",
+      "settings": [
+        { "type": "video", "id": "video", "label": "Vídeo vertical (9:16)", "info": "Sube el archivo a Shopify. Sin vídeo, el hueco solo se ve en el personalizador." },
+        { "type": "text", "id": "author", "label": "Autor (p. ej. @usuario)", "info": "Solo con permiso de la persona." }
+      ]
+    },
+    {
+      "type": "foto",
+      "name": "Foto «Así se lleva»",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Foto", "info": "Rellena el texto alternativo de la imagen en Archivos." },
+        { "type": "text", "id": "caption", "label": "Pie de foto" }
+      ]
+    },
+    {
+      "type": "faq",
+      "name": "Pregunta",
+      "settings": [
+        { "type": "text", "id": "question", "label": "Pregunta", "default": "Pregunta" },
+        { "type": "richtext", "id": "answer", "label": "Respuesta", "default": "<p>Respuesta.</p>" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Mala Cara · Venta",
+      "blocks": [
+        { "type": "ventaja", "settings": { "title": "Cara tejida", "text": "<p>El diseño va en el punto, no pegado encima. Aguanta lavados sin cuartearse.</p>" } },
+        { "type": "ventaja", "settings": { "title": "Calor sin agobio", "text": "<p>Punto con elastano que se ajusta a la cabeza sin apretar.</p>" } },
+        { "type": "ventaja", "settings": { "title": "Imposible pasar desapercibido", "text": "<p>Amarillo, antifaz y lengua fuera. Para la nieve, la moto o la calle en enero.</p>" } },
+        { "type": "video" },
+        { "type": "video" },
+        { "type": "video" },
+        { "type": "foto" },
+        { "type": "foto" },
+        { "type": "foto" },
+        { "type": "foto" },
+        { "type": "faq", "settings": { "question": "¿Qué talla es?", "answer": "<p>Talla única. Es de punto con un 5% de elastano, así que se adapta a la mayoría de cabezas de adulto.</p>" } },
+        { "type": "faq", "settings": { "question": "¿Puedo llevarlo con gafas?", "answer": "<p>La abertura de los ojos tiene forma de antifaz amplio. Revisa este texto con la muestra final antes de publicarlo.</p>" } },
+        { "type": "faq", "settings": { "question": "¿Se puede respirar bien? ¿Da calor?", "answer": "<p>Es punto, no tejido cerrado: abriga y deja pasar el aire por la zona de la boca. Revisa este texto con la muestra final antes de publicarlo.</p>" } },
+        { "type": "faq", "settings": { "question": "¿Cómo se lava?", "answer": "<p>Sigue las instrucciones de la etiqueta de composición. Lavarlo del revés ayuda a que el tejido dure más.</p>" } },
+        { "type": "faq", "settings": { "question": "¿Cuándo me llega?", "answer": "<p>Entre 7 y 12 días laborables desde que haces el pedido. Te mandamos el número de seguimiento por email.</p>" } },
+        { "type": "faq", "settings": { "question": "¿Y si no me convence?", "answer": "<p>Tienes 14 días desde que lo recibes para devolverlo. Todos los pasos están en la política de devoluciones.</p>" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

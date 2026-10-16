@@ -1,0 +1,16 @@
+{%- comment -%}
+  Iconos de Mala Cara. Uso: {% render 'mc-icon', name: 'truck' %}
+  Nombres: truck, return, lock, size.
+{%- endcomment -%}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  {%- case name -%}
+    {%- when 'truck' -%}
+      <path d="M2 6h11v10H2z"/><path d="M13 9h4l4 4v3h-8z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>
+    {%- when 'return' -%}
+      <path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>
+    {%- when 'lock' -%}
+      <rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+    {%- when 'size' -%}
+      <path d="M12 3c-4.4 0-8 3.6-8 8v6c0 2.2 3.6 4 8 4s8-1.8 8-4v-6c0-4.4-3.6-8-8-8z"/><path d="M8 12c1-1.2 2.4-1.2 3.4 0"/><path d="M12.6 12c1-1.2 2.4-1.2 3.4 0"/>
+  {%- endcase -%}
+</svg>
